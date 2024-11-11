@@ -3,25 +3,33 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: circleci/node:20.18.0  # You can change the Node.js version here
+      - image: circleci/node:20.18.0
     working_directory: ~/repo
 
 jobs:
   install_dependencies:
     executor: node-executor
     steps:
-      - checkout  # This checks out your GitHub repository
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-npm-cache-{{ checksum "package-lock.json" }}  # Cache key based on package-lock
+            - v1-npm-cache-
       - run:
           name: Install dependencies
-          command: npm install  # Installs project dependencies
-          
+          command: npm install
+      - save_cache:
+          paths:
+            - ./node_modules
+          key: v1-npm-cache-{{ checksum "package-lock.json" }}  # Cache node_modules folder
+
   test:
     executor: node-executor
     steps:
-      - checkout  # Checks out the code again for the test job
+      - checkout
       - run:
           name: Run tests
-          command: npm test  # Runs your tests
+          command: npm test
 
 workflows:
   version: 2
@@ -30,4 +38,4 @@ workflows:
       - install_dependencies
       - test:
           requires:
-            - install_dependencies  # Runs the test job after dependencies are installed
+            - install_dependencies
